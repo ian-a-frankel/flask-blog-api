@@ -29,19 +29,21 @@ class User(db.Model,SerializerMixin):
             raise ValueError("name must be at least 1 character")
         return name
 
-    # def to_dict(self):
-    #     return {"id": self.id, "name": self.name}
+    def to_dict(self):
+        return {"id": self.id, "name": self.name}
 
 
 class Blog(db.Model, SerializerMixin):
     __tablename__ = "blog_table"
-    serialize_rules = ("-user_object.blog_list",)
+    serialize_rules = ("-user_object.blog_list", "-comment_list.blog_object",)
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey("user_table.id"))
     content = db.Column(db.String)
     title = db.Column(db.String)
 
     user_object = db.relationship("User", back_populates="blog_list")
+
+    comment_list = db.relationship("Comment", back_populates="blog_object")
 
 
     @validates('content')
@@ -50,12 +52,22 @@ class Blog(db.Model, SerializerMixin):
             raise ValueError('Blogs must be at least 5 words')
         return content
 
-    # def to_dict(self):
-    #     return {
-    #         "id": self.id,
-    #         "user_id": self.user_id,
-    #         "content": self.content,
-    #         "title": self.title,
-    #     }
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "user_id": self.user_id,
+            "content": self.content,
+            "title": self.title,
+        }
 
 
+class Comment(db.Model, SerializerMixin):
+
+    serialize_rules = ("-blog_object.comment_list")
+    
+    __tablename__ = "comment_table"
+    id = db.Column(db.Integer, primary_key = True)
+    blog_id = db.Column(db.Integer, db.ForeignKey('blog_table.id'))
+    content = db.Column(db.String)
+
+    blog_object = db.relationship("Blog", back_populates="comment_list")
